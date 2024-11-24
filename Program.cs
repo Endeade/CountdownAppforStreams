@@ -6,22 +6,12 @@ namespace CountdownTimerApp
 {
     class Program
     {
-        // Timer for countdown interval
         static System.Timers.Timer timer;
-
-        // Countdown time to track remaining time
         static TimeSpan countdownTime;
-
-        // Selected time unit (hours, minutes, or seconds)
         static TimeUnit selectedUnit = TimeUnit.Seconds;
-
-        // Flag to check if timer is running
         static bool isTimerRunning = false;
-
-        // Path for the countdown file to save/load the timer value
         const string filePath = @"C:\countdown.txt";
 
-        // Enum for time units to adjust
         enum TimeUnit
         {
             Hours,
@@ -31,35 +21,29 @@ namespace CountdownTimerApp
 
         static void Main(string[] args)
         {
-            Console.Clear(); // Clears the console at launch
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Cyan;
 
-            // Load countdown time from file or set to zero if no file exists
+            // Fancy title with a border and some animation
+            PrintTitle();
+
+            // Load countdown time or set default value
             countdownTime = LoadCountdownTime();
 
-            // Initialize timer with a 1-second interval
+            // Setup the timer
             timer = new System.Timers.Timer(1000);
-            timer.Elapsed += UpdateCountdown; // Event to update countdown every second
+            timer.Elapsed += UpdateCountdown;
 
-            // Instructions for the user
-            Console.WriteLine("Countdown Timer");
-            Console.WriteLine("Press 'h' to select hours, 'm' to select minutes, 's' to select seconds.");
-            Console.WriteLine("Enter a positive or negative number to add or subtract time for the selected unit.");
-            Console.WriteLine("Press 'e' to exit.");
-            Console.WriteLine("Press 'f' to save and start the countdown.");
-            Console.WriteLine("Press 'r' to stop and save the current state of the countdown.");
+            // Display the main menu
+            DisplayMainMenu();
 
-            // Display the initial countdown time loaded from file
-            DisplayInitialTime();
-            DisplayRemainingTime(); // Display current remaining time on screen
-
-            // Main loop to handle user input
+            // Main loop
             while (true)
             {
                 HandleInput();
             }
         }
 
-        // Loads saved countdown time from the file
         static TimeSpan LoadCountdownTime()
         {
             if (File.Exists(filePath))
@@ -71,157 +55,199 @@ namespace CountdownTimerApp
                 }
                 catch
                 {
-                    Console.WriteLine("Failed to load saved time. Starting from 0:00:00.");
+                    Console.WriteLine("Error reading time from file. Starting with 0.");
                 }
             }
-            return new TimeSpan(0, 0, 0); // Default to zero if file not found or parsing fails
+            return new TimeSpan(0, 0, 0);
         }
 
-        // Updates countdown timer every second
         static void UpdateCountdown(object sender, ElapsedEventArgs e)
         {
             if (countdownTime > TimeSpan.Zero)
             {
-                countdownTime = countdownTime.Subtract(TimeSpan.FromSeconds(1)); // Decrease by 1 second
-                File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss")); // Save updated time to file
-                DisplayRemainingTime(); // Update displayed remaining time
+                countdownTime = countdownTime.Subtract(TimeSpan.FromSeconds(1));
+                File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss"));
             }
             else
             {
-                timer.Stop(); // Stop timer if countdown reaches zero
-                isTimerRunning = false;
-                Console.WriteLine("Countdown Complete"); // Display completion message
+                StopAndSaveCountdown();
             }
+
+            // Clear the previous time and print the updated time on the same line
+            Console.SetCursorPosition(0, 9);
+            Console.WriteLine($"Remaining time: {countdownTime:hh\\:mm\\:ss}   ");
         }
 
-        // Displays the loaded time from file as initial time on the console
-        static void DisplayInitialTime()
+        static void PrintTitle()
         {
-            Console.SetCursorPosition(0, 8); // Set position for display
-            Console.WriteLine($"Remaining Time on Launch: {countdownTime:hh\\:mm\\:ss}   ");
+            // Print a colorful title with some spacing
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("***************************************************");
+            Console.WriteLine("*                                                 *");
+            Console.WriteLine("*           Welcome to Countdown Timer!           *");
+            Console.WriteLine("*                                                 *");
+            Console.WriteLine("***************************************************");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("\nStarting the timer allows you to countdown time!");
+            Console.WriteLine("---------------------------------------------------");
+            System.Threading.Thread.Sleep(1000); // Simulate a little delay for effect
         }
 
-        // Displays the current remaining countdown time on the console
-        static void DisplayRemainingTime()
+        static void DisplayMainMenu()
         {
-            Console.SetCursorPosition(0, 9); // Set position for display
-            Console.WriteLine($"Remaining Time: {countdownTime:hh\\:mm\\:ss}   ");
+            // Clear the screen and display the main menu
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Select your option by pressing the corresponding key:");
+            Console.WriteLine("[h] - Set hours   [m] - Set minutes   [s] - Set seconds");
+            Console.WriteLine("[f] - Start Timer   [r] - Stop Timer");
+            Console.WriteLine("[e] - Exit");
+            Console.WriteLine($"Remaining time on launch: {countdownTime:hh\\:mm\\:ss}");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("\nEnter your choice: ");
         }
 
-        // Handles user input to adjust or control the countdown timer
         static void HandleInput()
         {
-            Console.SetCursorPosition(0, 11); // Position for input prompt
-            Console.Write("Enter your choice: ");
-            var input = Console.ReadLine()?.Trim(); // Read user input
+            if (!Console.KeyAvailable) return;
 
-            ClearInputLines(); // Clear input line and additional lines after input
+            var key = Console.ReadKey(true).Key;
+            Console.SetCursorPosition(0, 8); // Move cursor up to input area to prevent overlapping text
 
-            // Handle input based on user's choice
-            switch (input)
+            switch (key)
             {
-                case "h":
+                case ConsoleKey.H:
                     selectedUnit = TimeUnit.Hours;
-                    EditTime(); // Call method to edit hours
+                    Console.WriteLine("Editing hours...");
                     break;
-                case "m":
+                case ConsoleKey.M:
                     selectedUnit = TimeUnit.Minutes;
-                    EditTime(); // Call method to edit minutes
+                    Console.WriteLine("Editing minutes...");
                     break;
-                case "s":
+                case ConsoleKey.S:
                     selectedUnit = TimeUnit.Seconds;
-                    EditTime(); // Call method to edit seconds
+                    Console.WriteLine("Editing seconds...");
                     break;
-                case "e":
-                    Console.WriteLine("Exiting the application...");
+                case ConsoleKey.F:
+                    SaveAndStartCountdown();
+                    break;
+                case ConsoleKey.R:
+                    StopAndSaveCountdown();
+                    break;
+                case ConsoleKey.E:
                     Environment.Exit(0); // Exit the application
                     break;
-                case "f":
-                    SaveAndStartCountdown(); // Start countdown
-                    break;
-                case "r":
-                    StopAndSaveCountdown(); // Stop countdown and save time
-                    break;
                 default:
-                    Console.WriteLine("Invalid input. Please enter 'h', 'm', 's', 'e', 'f', or 'r'.");
+                    AdjustTime(key); // Adjust time based on user input
                     break;
             }
         }
 
-        // Clears input prompt lines from the console to prevent clutter
-        static void ClearInputLines()
+        static void AdjustTime(ConsoleKey key)
         {
-            Console.SetCursorPosition(0, 11); // First line used for input prompt
-            Console.Write(new string(' ', Console.WindowWidth)); // Clear line
-            Console.SetCursorPosition(0, 12); // Additional line for "Enter time adjustment"
-            Console.Write(new string(' ', Console.WindowWidth)); // Clear line
-            Console.SetCursorPosition(0, 11); // Move cursor back to first input line
-        }
+            Console.WriteLine("Enter a value (positive or negative number) to adjust the time.");
 
-        // Method to edit time based on selected unit and user input
-        static void EditTime()
-        {
-            Console.SetCursorPosition(0, 12); // Position for "Enter time adjustment" prompt
-            Console.Write("Enter time adjustment (positive or negative integer): ");
-
-            // Parse integer input for time adjustment
-            if (int.TryParse(Console.ReadLine(), out int input))
+            string input = Console.ReadLine();
+            if (int.TryParse(input, out int value))
             {
-                // Adjust countdown time based on selected unit and input value
                 switch (selectedUnit)
                 {
                     case TimeUnit.Hours:
-                        countdownTime = countdownTime.Add(TimeSpan.FromHours(input));
+                        countdownTime = countdownTime.Add(TimeSpan.FromHours(value));
                         break;
                     case TimeUnit.Minutes:
-                        countdownTime = countdownTime.Add(TimeSpan.FromMinutes(input));
+                        countdownTime = countdownTime.Add(TimeSpan.FromMinutes(value));
                         break;
                     case TimeUnit.Seconds:
-                        countdownTime = countdownTime.Add(TimeSpan.FromSeconds(input));
+                        countdownTime = countdownTime.Add(TimeSpan.FromSeconds(value));
                         break;
                 }
 
-                // Auto-save and update display after adjusting time
-                File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss"));
-                DisplayInitialTime(); // Update initial time display
-                DisplayRemainingTime(); // Update remaining time display
+                // Automatically save and update the countdown time
+                try
+                {
+                    File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss"));
+                }
+                catch (FormatException)
+                {
+                    Console.WriteLine("Error: The time format is invalid.");
+                }
+
+                Console.SetCursorPosition(0, 8); // Print the updated time on the same line
+                Console.WriteLine($"Updated time: {countdownTime:hh\\:mm\\:ss}");
             }
             else
             {
-                Console.WriteLine("Invalid input. Please enter an integer.");
+                Console.WriteLine("Invalid input, please enter a valid number.");
             }
-            ClearInputLines(); // Clear input lines after editing
+
+            DisplayMainMenu();  // Redisplay main menu after input
         }
 
-        // Starts the countdown timer and saves the current time to the file
         static void SaveAndStartCountdown()
         {
+            // Prevent starting if the timer is already running
             if (isTimerRunning)
             {
+                Console.SetCursorPosition(0, 10); // Prevent overlapping text
                 Console.WriteLine("Countdown is already running.");
                 return;
             }
 
-            File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss")); // Save initial time to file
-            timer.Start(); // Start countdown timer
+            // Prevent starting if the countdown time is zero or negative
+            if (countdownTime <= TimeSpan.Zero)
+            {
+                Console.SetCursorPosition(0, 10);
+                Console.WriteLine("Cannot start. Set a positive countdown time first.");
+                return;
+            }
+
+            // Start the timer
+            timer.Start();
             isTimerRunning = true;
-            Console.WriteLine("Countdown started."); // Notify user
+
+            // Save the current countdown time to the file
+            try
+            {
+                File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss"));
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Error: The time format is invalid.");
+            }
+
+            Console.SetCursorPosition(0, 10); // Prevent overlapping text
+            Console.WriteLine("Countdown started.");
+            DisplayMainMenu();
         }
 
-        // Stops the countdown timer and saves the current time to the file
         static void StopAndSaveCountdown()
         {
-            if (isTimerRunning)
+            // Prevent stopping if the timer isn't running
+            if (!isTimerRunning)
             {
-                timer.Stop(); // Stop the timer
-                isTimerRunning = false;
-                File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss")); // Save current time
-                Console.WriteLine($"Countdown stopped and saved at: {countdownTime:hh\\:mm\\:ss}");
+                Console.SetCursorPosition(0, 10); // Prevent overlapping text
+                Console.WriteLine("Countdown is not running.");
+                return;
             }
-            else
+
+            // Stop the timer
+            timer.Stop();
+            isTimerRunning = false;
+
+            // Save the current countdown time to the file
+            try
             {
-                Console.WriteLine("Countdown is not running."); // Notify if timer wasn't running
+                File.WriteAllText(filePath, countdownTime.ToString(@"hh\:mm\:ss"));
             }
+            catch (FormatException)
+            {
+                Console.WriteLine("Error: The time format is invalid.");
+            }
+
+            Console.SetCursorPosition(0, 10); // Prevent overlapping text
+            Console.WriteLine($"Countdown stopped at: {countdownTime:hh\\:mm\\:ss}");
+            DisplayMainMenu();
         }
     }
 }
