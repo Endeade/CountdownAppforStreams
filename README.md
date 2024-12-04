@@ -9,5 +9,5 @@ Countdown CLI app for streamers to use during subathons
 5. You can adjust hours, minutes and seconds with positive and negative integers.
 6. Import it into Streamlabs OBS/OBS Studio by creating a Text source pointing to the aformentioned location.
 
-# Requirements
+## Requirements
 .NET 8
